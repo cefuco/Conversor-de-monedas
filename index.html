@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversor de Monedas con Historial</title>
+  <!-- Incluye la librería Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Conversor de Monedas con Historial</h1>
+
+  <label for="monto">Monto en Pesos Chilenos:</label>
+  <input type="number" id="monto" placeholder="Ingrese el monto" />
+
+  <label for="moneda">Seleccione la Moneda:</label>
+  <select id="moneda">
+    <option value="usd">Dólares estadounidenses (USD)</option>
+    <option value="eur">Euros (EUR)</option>
+    <!-- Agrega más opciones según tus necesidades -->
+  </select>
+
+  <button onclick="convertir()">Convertir</button>
+
+  <h2>Resultado:</h2>
+  <div id="resultado"></div>
+
+  <!-- Contenedor para la gráfica -->
+  <div>
+    <h2>Historial de los últimos 10 días:</h2>
+    <canvas id="historialGrafica" width="400" height="200"></canvas>
+  </div>
+
+  <script>
+    function convertir() {
+      const montoInput = document.getElementById('monto');
+      const monedaSelect = document.getElementById('moneda');
+      const resultadoDiv = document.getElementById('resultado');
+      
+      const monto = parseFloat(montoInput.value);
+      const moneda = monedaSelect.value;
+
+      if (isNaN(monto) || monto <= 0) {
+        alert('Ingrese un monto válido.');
+        return;
+      }
+
+      fetch(`https://mindicador.cl/api/${moneda}`)
+        .then(response => response.json())
+        .then(data => {
+          const valorMoneda = data.serie[0].valor;
+          const resultado = monto / valorMoneda;
+
+          resultadoDiv.innerHTML = `${monto} Pesos Chilenos equivalen a ${resultado.toFixed(2)} ${moneda.toUpperCase()}`;
+
+          // Obtener el historial de los últimos 10 días
+          const historial = data.serie.slice(0, 10);
+          
+          // Preparar datos para la gráfica
+          const labels = historial.map(day => day.fecha);
+          const valores = historial.map(day => day.valor);
+
+          // Configurar la gráfica
+          const ctx = document.getElementById('historialGrafica').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: `Valor de ${moneda.toUpperCase()}`,
+                data: valores,
+                borderColor: 'blue',
+                fill: false,
+              }]
+            },
+          });
+        })
+        .catch(error => {
+          console.error('Error al obtener el tipo de cambio:', error);
+          resultadoDiv.innerHTML = 'Error al obtener el tipo de cambio. Intente nuevamente.';
+        });
+    }
+  </script>
+</body>
+</html>
+
